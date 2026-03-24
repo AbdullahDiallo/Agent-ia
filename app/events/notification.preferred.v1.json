@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "notification.preferred.v1",
+  "type": "object",
+  "required": ["person_id", "dedupe_key", "email_subject", "email_html", "email_text", "sms_text", "wa_text"],
+  "properties": {
+    "recipient_scope": { "type": "string", "enum": ["applicant"] },
+    "person_id": { "type": "string", "format": "uuid" },
+    "applicant_person_id": { "type": "string", "format": "uuid" },
+    "applicant_email": { "type": ["string", "null"], "format": "email" },
+    "applicant_phone": { "type": ["string", "null"] },
+    "assigned_agent_email": { "type": ["string", "null"], "format": "email" },
+    "dedupe_key": { "type": "string", "minLength": 3 },
+    "email_subject": { "type": "string" },
+    "email_html": { "type": "string" },
+    "email_text": { "type": "string" },
+    "sms_text": { "type": "string" },
+    "wa_text": { "type": "string" }
+  },
+  "additionalProperties": false
+}

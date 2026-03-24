@@ -1,0 +1,5 @@
+# Exclusions justificatives du scan legacy/immo.
+# Ces migrations sont conservées pour l'historique DB et ne reflètent pas le domaine fonctionnel actif.
+alembic/versions/bb34b43b2d18_initial_schema.py
+alembic/versions/d8f3c4e5a6b7_add_sentiment_to_conversations.py
+alembic/versions/f4a9d2c1b8e7_add_school_admission_rules.py

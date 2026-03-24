@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aelixoria AI — Agent IA Admissions | Démo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --text-muted: #8888a0;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --green: #22c55e;
+      --gold: #f59e0b;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated gradient background */
+    .bg-gradient {
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(139,92,246,0.08) 0%, transparent 60%),
+        var(--bg);
+    }
+
+    /* Nav */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 1.2rem; letter-spacing: -0.02em;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: white;
+    }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted); font-size: 0.9rem; font-weight: 500;
+      text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn-nav {
+      background: var(--accent); color: white; border: none; border-radius: 8px;
+      padding: 8px 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-nav:hover { background: #5558e6; transform: translateY(-1px); }
+
+    /* Hero */
+    .hero {
+      padding: 140px 2rem 80px;
+      text-align: center;
+      max-width: 900px; margin: 0 auto;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 100px; padding: 6px 16px;
+      font-size: 0.8rem; color: var(--green); font-weight: 500;
+      margin-bottom: 2rem;
+    }
+    .badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--text-muted); line-height: 1.7;
+      max-width: 640px; margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: white; border: none; border-radius: 10px;
+      padding: 14px 32px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--accent-glow); }
+    .btn-secondary {
+      background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 32px; font-size: 1rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-secondary:hover { background: var(--surface); border-color: var(--accent); }
+
+    /* Features */
+    .features {
+      max-width: 1200px; margin: 0 auto; padding: 80px 2rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2rem; transition: all 0.3s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin-bottom: 1.2rem;
+    }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.6rem; }
+    .feature-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* Stats */
+    .stats {
+      max-width: 900px; margin: 0 auto; padding: 40px 2rem 80px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    }
+    .stat { text-align: center; }
+    .stat-value {
+      font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Instructions */
+    .instructions {
+      max-width: 800px; margin: 0 auto 80px; padding: 0 2rem;
+    }
+    .instructions-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2.5rem; position: relative; overflow: hidden;
+    }
+    .instructions-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--accent), #a78bfa, var(--green));
+    }
+    .instructions-card h2 {
+      font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem;
+    }
+    .step {
+      display: flex; gap: 1rem; margin-bottom: 1.2rem; align-items: flex-start;
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(99,102,241,0.15); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .step-text { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+    .step-text code {
+      background: var(--surface-2); padding: 2px 8px; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--green);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      text-align: center; color: var(--text-muted); font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">
+        <div class="logo-icon">A</div>
+        <span>Aelixoria AI</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Fonctionnalités</a>
+        <a href="#demo">Démo</a>
+        <a href="#setup">Configuration</a>
+        <button class="btn-nav" onclick="window.open('/login','_blank')">Dashboard →</button>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="badge">Agent IA en ligne</div>
+    <h1>L'assistant admissions <em>intelligent</em> pour votre établissement</h1>
+    <p>
+      Aelixoria AI gère automatiquement les demandes d'admission sur tous vos canaux :
+      chat, WhatsApp, email, SMS et appels vocaux. Disponible 24h/24, multilingue, et connecté à votre catalogue.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="document.querySelector('.aelixoria-chatbot-button')?.click()">
+        💬 Tester le chatbot
+      </button>
+      <a href="#setup" class="btn-secondary">📖 Guide d'intégration</a>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Canaux supportés</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Langues (FR/EN/WO)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">24/7</div>
+      <div class="stat-label">Disponibilité</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">&lt;2s</div>
+      <div class="stat-label">Temps de réponse</div>
+    </div>
+  </div>
+
+  <section class="features" id="features">
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <h3>Chat Web & Widget</h3>
+      <p>Widget embeddable sur votre site. L'IA répond aux questions sur les filières, les frais et l'admission en temps réel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>WhatsApp Business</h3>
+      <p>Réception et envoi de messages, pièces jointes (PDF, images), et templates proactifs pour les rappels de RDV.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📞</div>
+      <h3>Appels Vocaux IA</h3>
+      <p>L'agent Salma répond au téléphone, comprend la parole en temps réel et guide les candidats vocalement.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📧</div>
+      <h3>Email Intelligent</h3>
+      <p>Réponse automatique aux emails entrants avec threading, pièces jointes et templates HTML professionnels.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Dashboard & Analytics</h3>
+      <p>Tableau de bord complet avec RBAC (admin, manager, agent, viewer), suivi des conversations et KPIs.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Sécurité & Multi-tenant</h3>
+      <p>Chiffrement PII, JWT RS256, isolation par tenant, rate limiting Redis, et conformité RGPD intégrée.</p>
+    </div>
+  </section>
+
+  <section class="instructions" id="setup">
+    <div class="instructions-card">
+      <h2>⚡ Intégration en 3 étapes</h2>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          Créez votre compte école via <code>POST /billing/onboard</code> ou contactez notre équipe pour un setup guidé.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          Configurez votre catalogue (départements, programmes, filières, frais) via le dashboard ou l'API <code>/school/catalog</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          Intégrez le widget sur votre site avec une seule ligne :<br>
+          <code>&lt;script src="https://votre-domaine/chatbot-widget.js"&gt;&lt;/script&gt;</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2025 Aelixoria AI — Propulsé par l'intelligence artificielle au service de l'éducation</p>
+  </footer>
+
+  <!-- Chatbot Widget -->
+  <script>
+    // Read embed_key from URL params for demo, or use empty string
+    const _demoParams = new URLSearchParams(window.location.search);
+    window.AELIXORIATechWidgetConfig = {
+      apiUrl: _demoParams.get('api_url') || (window.location.origin.includes('localhost') ? 'http://localhost:8000' : window.location.origin),
+      // Secure auth: only public embed_key, no secrets in HTML
+      embedKey: _demoParams.get('embed_key') || '',
+      enableVoiceCall: true,
+      agentName: 'Salma Benali',
+      agentTitle: 'Conseillère Admissions IA',
+      welcomeMessage: "Bonjour ! Je suis Salma, votre assistante admission IA. Posez-moi vos questions sur les programmes, les frais ou prenez un rendez-vous. 😊",
+    };
+  </script>
+  <script src="/chatbot-widget.js"></script>
+</body>
+</html>

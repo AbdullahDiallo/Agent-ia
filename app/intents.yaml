@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "default_intent": "general_information",
+  "intents": [
+    {
+      "name": "infos_filiere",
+      "action": "respond",
+      "keywords": {
+        "fr": ["filière", "formation", "programme", "niveau", "spécialité"],
+        "en": ["track", "program", "major", "curriculum", "department"],
+        "wo": ["filiere", "program", "formation", "ekool", "specialite"]
+      }
+    },
+    {
+      "name": "tarifs",
+      "action": "respond",
+      "keywords": {
+        "fr": ["frais", "coût", "prix", "paiement", "scolarité"],
+        "en": ["tuition", "fees", "cost", "price", "payment"],
+        "wo": ["frais", "cout", "prix", "payement", "filiere"]
+      }
+    },
+    {
+      "name": "admission",
+      "action": "respond",
+      "keywords": {
+        "fr": ["admission", "inscription", "entrée", "conditions", "candidature"],
+        "en": ["admission", "enrollment", "apply", "entry", "requirements"],
+        "wo": ["admission", "inskripsion", "sartu", "candidature", "dossier"]
+      }
+    },
+    {
+      "name": "documents_requis",
+      "action": "respond",
+      "keywords": {
+        "fr": ["pièces", "documents", "dossier", "justificatif", "à fournir"],
+        "en": ["documents", "required", "paperwork", "files", "submit"],
+        "wo": ["dokimante", "dossier", "piece", "fournir", "required"]
+      }
+    },
+    {
+      "name": "calendrier",
+      "action": "respond",
+      "keywords": {
+        "fr": ["calendrier", "dates", "horaire", "rentrée", "planning"],
+        "en": ["calendar", "schedule", "dates", "deadline", "timeline"],
+        "wo": ["calendrier", "waxtu", "dates", "planning", "deadline"]
+      }
+    },
+    {
+      "name": "prise_rdv",
+      "action": "respond",
+      "keywords": {
+        "fr": ["rendez-vous", "rdv", "créneau", "horaire", "disponible"],
+        "en": ["appointment", "meeting", "slot", "schedule", "available"],
+        "wo": ["rendez-vous", "rdv", "waxtu", "disponible", "jot"]
+      }
+    },
+    {
+      "name": "suivi",
+      "action": "respond",
+      "keywords": {
+        "fr": ["suivi", "dossier", "statut", "avancement", "résultat"],
+        "en": ["follow-up", "status", "application", "result", "progress"],
+        "wo": ["suivi", "dossier", "statut", "résultat", "application"]
+      }
+    },
+    {
+      "name": "escalade_humaine",
+      "action": "escalate_human",
+      "keywords": {
+        "fr": ["humain", "responsable", "plainte", "urgent", "directeur"],
+        "en": ["human", "manager", "complaint", "urgent", "director"],
+        "wo": ["nit", "responsable", "plainte", "urgent", "directeur"]
+      }
+    }
+  ],
+  "sensitive_keywords": {
+    "fr": ["plainte", "tribunal", "escroquerie", "menace", "harcèlement"],
+    "en": ["complaint", "lawsuit", "fraud", "threat", "harassment"],
+    "wo": ["plainte", "tribunal", "fraud", "menace", "harassment"]
+  },
+  "escalate_on_failures": 2
+}

@@ -1,0 +1,12 @@
+.venv*/
+__pycache__/
+*.pyc
+.env
+.coverage
+*.db
+logs/
+uploads/
+**/node_modules/
+venv/
+scripts/my-secrets.sh
+*.pem

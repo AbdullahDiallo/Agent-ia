@@ -1,0 +1,57 @@
+# ============================================
+# Fly.io — Backend API (salmaai-api)
+# ============================================
+# Deploy: fly deploy
+# Logs:   fly logs
+# SSH:    fly ssh console
+
+app = "salmaai-api"
+primary_region = "cdg"  # Paris — closest to Dakar/Senegal
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "python -m alembic upgrade head"
+
+[env]
+  ENV = "production"
+  LOG_LEVEL = "INFO"
+  APP_TIMEZONE = "UTC"
+  ENFORCE_TENANT_SCOPE = "true"
+  REDIS_SSL = "true"
+  AUTH_FAIL_CLOSED = "false"
+  ENABLE_DEV_ENDPOINTS = "false"
+  DEEPGRAM_MODEL = "nova-2"
+  STT_LANGUAGE = "multi"
+  ELEVENLABS_MODEL = "eleven_multilingual_v2"
+  SMS_PROVIDER = "twilio"
+  WHATSAPP_PROVIDER = "meta"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true    # Stop when idle (free tier savings)
+  auto_start_machines = true
+  min_machines_running = 0     # Scale to zero when no traffic
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 250
+    soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "30s"
+  method = "GET"
+  path = "/health/live"
+  timeout = "5s"
+
+[processes]
+  app = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --loop uvloop --http httptools --log-level info --ws websockets"
+
+# Free tier: shared-cpu-1x + 256mb (3 free machines per account)
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
