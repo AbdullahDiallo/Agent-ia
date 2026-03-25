@@ -293,7 +293,7 @@ class KnowledgeContext:
 
 def _format_catalog_items(items: list[dict[str, Any]], *, lang: str) -> str:
     lines: list[str] = []
-    for item in items[:3]:
+    for item in items[:25]:
         track_name = str(item.get("track_name") or "").strip()
         program_name = str(item.get("program_name") or "").strip()
         annual_fee = item.get("annual_fee")
@@ -376,6 +376,37 @@ def _search_catalog_items(db: Session, query: str) -> list[dict[str, Any]]:
     return [item for _, item in ranked[:3]]
 
 
+def _load_full_catalog(db: Session) -> list[dict[str, Any]]:
+    """Load the entire active catalog. Used as a fallback so the LLM always has real data."""
+    try:
+        rows = (
+            db.query(SchoolTrack, SchoolProgram, SchoolDepartment)
+            .join(SchoolProgram, SchoolTrack.program_id == SchoolProgram.id)
+            .join(SchoolDepartment, SchoolProgram.department_id == SchoolDepartment.id)
+            .filter(SchoolTrack.is_active == True, SchoolProgram.is_active == True)
+            .order_by(SchoolProgram.name.asc(), SchoolTrack.name.asc())
+            .limit(25)
+            .all()
+        )
+        return [
+            {
+                "track_id": str(track.id),
+                "track_name": track.name,
+                "program_name": program.name,
+                "department_name": department.name,
+                "delivery_mode": program.delivery_mode,
+                "annual_fee": float(track.annual_fee),
+                "registration_fee": float(track.registration_fee),
+                "monthly_fee": float(track.monthly_fee),
+                "certifications": track.certifications,
+                "access_level": program.access_level,
+            }
+            for track, program, department in rows
+        ]
+    except Exception:
+        return []
+
+
 def _resolve_catalog_facts(
     db: Session,
     *,
@@ -391,8 +422,12 @@ def _resolve_catalog_facts(
         or str(user_text or "").strip()
     )
     if not query:
-        return []
+        # Even without a query, load the full catalog so the LLM has data
+        query = "catalogue"
     items = _search_catalog_items(db, query)
+    if not items:
+        # Fallback: load full catalog regardless of query match
+        items = _load_full_catalog(db)
     if not items:
         return []
     title = {
@@ -525,10 +560,13 @@ def resolve_knowledge_context(
     retrieval_snippets: list[KnowledgeSnippet] = []
     seen_doc_ids: set[str] = set()
 
-    if "catalog" in critical_domains:
-        authoritative_facts.extend(
-            _resolve_catalog_facts(db, user_text=user_text, session_state=session_state, lang=lang)
-        )
+    # Always inject catalog facts so the LLM never has to guess program/track names.
+    # The catalog is small (typically <25 tracks) so the token cost is negligible.
+    catalog_facts = _resolve_catalog_facts(db, user_text=user_text, session_state=session_state, lang=lang)
+    if catalog_facts:
+        authoritative_facts.extend(catalog_facts)
+        if "catalog" not in critical_domains:
+            critical_domains.append("catalog")
 
     if any(domain in critical_domains for domain in {"requirements", "policies", "calendar"}):
         authoritative_facts.extend(
