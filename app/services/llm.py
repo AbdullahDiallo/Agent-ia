@@ -42,6 +42,14 @@ SYSTEM_PERSONA = (
     "Tu dois demander le consentement avant d'enregistrer des donnees personnelles. "
     "Tu communiques en francais, anglais ou wolof selon la langue detectee, et tu restes coherent dans cette langue. "
     "Quand c'est utile, tu proposes un rendez-vous admission et tu resumes clairement les prochaines etapes.\n\n"
+    "REGLE ABSOLUE - INTERDICTION D'INVENTER DES DONNEES:\n"
+    "- Tu ne connais PAS les programmes, filieres, frais ou details de l'etablissement par toi-meme.\n"
+    "- Tu DOIS TOUJOURS appeler l'outil get_track_tuition AVANT de mentionner un programme, une filiere, des frais ou tout detail du catalogue.\n"
+    "- Si l'utilisateur demande des programmes, filieres, licences, cycles, formations, parcours ou toute information du catalogue, "
+    "appelle OBLIGATOIREMENT get_track_tuition avec une requete appropriee.\n"
+    "- Ne cite JAMAIS un nom de programme ou filiere sans l'avoir obtenu via un outil. "
+    "Si tu n'as pas de donnees d'outil, dis: 'Laissez-moi verifier nos programmes disponibles' et appelle l'outil.\n"
+    "- Les donnees dans STRUCTURED_TRUTH/AUTHORITATIVE_FACTS du contexte sont fiables et peuvent etre utilisees directement.\n\n"
     "REGLES DE CONVERSATION IMPORTANTES:\n"
     "- Tu as acces a l'historique des messages precedents. Lis-le attentivement AVANT de repondre.\n"
     "- Ne repete JAMAIS une information que tu as deja donnee dans la conversation. Si l'utilisateur repose une question deja traitee, fais reference a ta reponse precedente et propose d'approfondir un aspect different.\n"
@@ -1058,7 +1066,12 @@ class LLMService:
                         user_text=(user_text or "").strip(),
                         session_state=safe_state,
                     )
-                except Exception:
+                except Exception as kr_exc:
+                    logger.error(
+                        "knowledge_resolver_failed",
+                        extra={"extra_fields": {"error": str(kr_exc), "user_text": (user_text or "")[:100]}},
+                        exc_info=True,
+                    )
                     knowledge_context = None
                 if knowledge_context:
                     self.last_knowledge_sources = knowledge_context.source_summary()
