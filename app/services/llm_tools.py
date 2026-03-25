@@ -364,6 +364,33 @@ async def _send_school_rdv_notifications(
     assigned_agent_email = str(getattr(assigned_agent_user, "email", "") or "").strip().lower() or None
     agent_payload = _agent_display_payload(db, rdv.agent_id)
     assigned_agent_name = agent_payload["display_name"] if agent_payload else None
+
+    # Générer le PDF de confirmation avec QR code et le stocker sur disque
+    pdf_path = None
+    try:
+        from .pdf_generator import generate_appointment_pdf
+        from pathlib import Path
+        pdf_bytes = generate_appointment_pdf(
+            person_name=display_name,
+            person_email=str(person.email or "").strip() or None,
+            person_phone=str(person.phone or "").strip() or None,
+            track_name=track.name,
+            program_name=program.name,
+            department_name=department.name,
+            appointment_date=date_label,
+            appointment_time=time_label,
+            appointment_id=str(rdv.id),
+            agent_name=assigned_agent_name,
+            requirements_text=requirements_text,
+        )
+        if pdf_bytes:
+            pdf_dir = Path("uploads") / "confirmations"
+            pdf_dir.mkdir(parents=True, exist_ok=True)
+            pdf_path = str(pdf_dir / f"confirmation_{rdv.id}.pdf")
+            Path(pdf_path).write_bytes(pdf_bytes)
+            logger.info(f"PDF confirmation saved: {pdf_path} ({len(pdf_bytes)} bytes)")
+    except Exception as pdf_exc:
+        logger.warning("PDF generation failed", extra={"extra_fields": {"error": str(pdf_exc)}})
     email_payload = None
     sms_payload = None
     email_recipient = str(person.email or "").strip().lower() or None
@@ -377,6 +404,7 @@ async def _send_school_rdv_notifications(
             "subject": subject,
             "html_body": html_body,
             "text_body": sms_text,
+            "pdf_path": pdf_path,
         }
     if sms_recipient:
         sms_payload = {

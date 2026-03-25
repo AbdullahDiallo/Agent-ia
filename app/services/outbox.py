@@ -236,6 +236,24 @@ async def process_notification_event(db: Session, row: OutboxEvent) -> bool:
     email_service = EmailService()
     sms_service = SMSService()
     wa_service = WhatsAppService()
+
+    # Envoyer le PDF en pièce jointe si disponible
+    pdf_path = str(payload.get("pdf_path") or "").strip()
+    pdf_attachment = None
+    if pdf_path:
+        try:
+            from pathlib import Path
+            from .email import EmailAttachment
+            pdf_file = Path(pdf_path)
+            if pdf_file.exists():
+                pdf_attachment = EmailAttachment(
+                    filename="Confirmation_RDV.pdf",
+                    content=pdf_file.read_bytes(),
+                    content_type="application/pdf",
+                )
+        except Exception as pdf_exc:
+            logger.warning(f"Failed to load PDF attachment: {pdf_exc}")
+
     result = await send_preferred_notification(
         db=db,
         person=person,
@@ -254,6 +272,7 @@ async def process_notification_event(db: Session, row: OutboxEvent) -> bool:
         assigned_agent_email=assigned_agent_email,
         event_type=row.event_type,
         event_id=str(row.id),
+        pdf_attachment=pdf_attachment,
     )
     reason = str(result.get("reason") or "")
     if reason in {"no_recipient_available", "recipient_scope_violation"}:

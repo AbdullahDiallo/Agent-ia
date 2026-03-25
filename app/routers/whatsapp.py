@@ -17,6 +17,7 @@ from ..logger import get_logger
 from ..services.provider_config import resolve_whatsapp_provider
 from ..services.webhook_security import verify_webhook
 from ..services.media_storage import download_and_store as store_media
+from ..services.attachment_reader import extract_text_from_file, format_attachment_content_for_llm
 
 router = APIRouter(tags=["whatsapp"])
 logger = get_logger(__name__)
@@ -105,9 +106,10 @@ async def whatsapp_incoming(request: Request, db: Session = Depends(get_db)):
                         auth_password=twilio_auth[1],
                     )
                     if stored:
-                        media_summaries.append(
-                            f"[FICHIER REÇU: {stored['filename']} ({mtype}, {stored['size_bytes']} octets) - stocké]"
-                        )
+                        # Tenter d'extraire le contenu textuel du fichier
+                        extracted = extract_text_from_file(stored.get("storage_path", ""), mtype)
+                        summary = format_attachment_content_for_llm(stored["filename"], mtype, extracted)
+                        media_summaries.append(summary)
                     else:
                         media_summaries.append(f"[MEDIA {i+1}: {mtype} - non supporté ou trop volumineux]")
                 except Exception:

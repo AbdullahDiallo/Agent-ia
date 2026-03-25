@@ -17,6 +17,7 @@ from ..services.email import EmailService
 from ..logger import get_logger
 from ..services.webhook_security import verify_webhook
 from ..services.media_storage import store_raw_bytes as store_media_bytes
+from ..services.attachment_reader import extract_text_from_file, format_attachment_content_for_llm
 
 router = APIRouter(tags=["email"])
 logger = get_logger(__name__)
@@ -179,9 +180,9 @@ async def email_incoming(request: Request, db: Session = Depends(get_db)):
                             original_filename=att_filename,
                         )
                         if stored:
-                            attachment_summaries.append(
-                                f"[PIÈCE JOINTE: {att_filename} ({att_ctype}, {stored['size_bytes']} octets) - stockée]"
-                            )
+                            extracted = extract_text_from_file(stored.get("storage_path", ""), att_ctype)
+                            summary = format_attachment_content_for_llm(att_filename, att_ctype, extracted)
+                            attachment_summaries.append(summary)
                     except Exception as exc:
                         logger.warning(f"Email attachment storage failed: {exc}")
         if attachment_summaries:

@@ -215,6 +215,7 @@ def store_raw_bytes(
             "filename": original_filename or filename,
             "content_type": content_type,
             "size_bytes": len(content),
+            "storage_path": str(storage_path),
         }
     except Exception as e:
         logger.error(f"Raw media storage failed: {e}", exc_info=True)

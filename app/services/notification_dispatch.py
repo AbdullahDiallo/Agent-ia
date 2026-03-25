@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Dict
+from typing import Any, Optional, Dict
 
 from ..models import Person
 from ..services.email import EmailService
@@ -55,6 +55,7 @@ async def send_preferred_notification(
     assigned_agent_email: Optional[str] = None,
     event_type: Optional[str] = None,
     event_id: Optional[str] = None,
+    pdf_attachment: Optional[Any] = None,
 ) -> Dict[str, Optional[str]]:
     """Send a notification using WhatsApp -> Email -> SMS priority.
 
@@ -155,12 +156,21 @@ async def send_preferred_notification(
     # Email fallback
     if resolved_email and email_service.is_configured():
         try:
-            sent = await email_service.send_email(
-                to_email=resolved_email,
-                subject=email_subject,
-                html_body=email_html,
-                text_body=email_text,
-            )
+            if pdf_attachment:
+                sent = await email_service.send_email_with_attachments(
+                    to_email=resolved_email,
+                    subject=email_subject,
+                    html_body=email_html,
+                    text_body=email_text,
+                    attachments=[pdf_attachment],
+                )
+            else:
+                sent = await email_service.send_email(
+                    to_email=resolved_email,
+                    subject=email_subject,
+                    html_body=email_html,
+                    text_body=email_text,
+                )
         except Exception:
             sent = False
         kb_service.create_email_log(
