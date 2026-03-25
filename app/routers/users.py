@@ -8,6 +8,7 @@ from typing import List
 from ..db import get_db
 from ..models import User, Role, Agent, Manager, Viewer
 from ..security import get_principal, Principal
+from ..services.agents import sync_role_satellite
 from ..services.auth import hash_password
 from pydantic import BaseModel, EmailStr
 import logging
@@ -106,10 +107,10 @@ def get_all_users(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux administrateurs"
         )
-    
+
     # Charger tous les utilisateurs
     users = db.query(User).all()
-    
+
     result = []
     for user in users:
         role_data = None
@@ -120,7 +121,7 @@ def get_all_users(
                     "id": role.id,
                     "name": role.name,
                 }
-        
+
         result.append({
             "id": user.id,
             "email": user.email,
@@ -132,7 +133,7 @@ def get_all_users(
             "mfa_enabled": user.mfa_enabled,
             "created_at": user.created_at.isoformat()
         })
-    
+
     return result
 
 
@@ -149,7 +150,7 @@ def get_all_roles(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux administrateurs"
         )
-    
+
     _ensure_core_roles(db)
     roles = db.query(Role).all()
     order_index = {name: idx for idx, name in enumerate(_ROLE_ORDER)}
@@ -171,7 +172,7 @@ def create_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux administrateurs"
         )
-    
+
     # Vérifier si l'email existe déjà
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
@@ -179,7 +180,7 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Un utilisateur avec cet email existe déjà"
         )
-    
+
     # Vérifier que le rôle existe
     role = db.query(Role).filter(Role.id == user_data.role_id).first()
     if not role:
@@ -187,7 +188,7 @@ def create_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rôle introuvable"
         )
-    
+
     # Créer l'utilisateur
     new_user = User(
         email=user_data.email,
@@ -202,30 +203,12 @@ def create_user(
     db.commit()
     db.refresh(new_user)
 
-    # Charger le rôle pour déterminer le type (agent / manager / viewer)
-    role = db.get(Role, new_user.role_id)
-
-    # Créer automatiquement l'entrée liée dans agents / managers / viewers
-    if role is not None:
-        if role.name == "agent":
-            # Ne créer qu'un seul agent par utilisateur
-            existing = db.query(Agent).filter(Agent.user_id == new_user.id).first()
-            if not existing:
-                db.add(Agent(user_id=new_user.id))
-                db.commit()
-        elif role.name == "manager":
-            existing = db.query(Manager).filter(Manager.user_id == new_user.id).first()
-            if not existing:
-                db.add(Manager(user_id=new_user.id))
-                db.commit()
-        elif role.name == "viewer":
-            existing = db.query(Viewer).filter(Viewer.user_id == new_user.id).first()
-            if not existing:
-                db.add(Viewer(user_id=new_user.id))
-                db.commit()
+    # Synchroniser automatiquement les tables satellites (agents/managers/viewers)
+    sync_role_satellite(db, new_user)
+    db.commit()
 
     logger.info(f"Utilisateur créé: {new_user.email} par {principal.sub}")
-    
+
     return {
         "id": new_user.id,
         "email": new_user.email,
@@ -257,7 +240,7 @@ def update_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux administrateurs"
         )
-    
+
     # Récupérer l'utilisateur
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -265,7 +248,7 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Utilisateur introuvable"
         )
-    
+
     # Vérifier que le rôle existe
     role = db.query(Role).filter(Role.id == user_data.role_id).first()
     if not role:
@@ -273,26 +256,30 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rôle introuvable"
         )
-    
+
     # Mettre à jour les champs
     user.first_name = user_data.first_name
     user.last_name = user_data.last_name
     user.phone = user_data.phone
     user.role_id = user_data.role_id
     user.mfa_enabled = user_data.mfa_enabled
-    
+
     # Mettre à jour le mot de passe si fourni
     if user_data.password:
         user.password_hash = hash_password(user_data.password)
-    
+
     db.commit()
     db.refresh(user)
-    
+
+    # Synchroniser les tables satellites si le rôle a changé
+    sync_role_satellite(db, user)
+    db.commit()
+
     logger.info(f"Utilisateur modifié: {user.email} par {principal.sub}")
-    
+
     # Charger le rôle
     role = db.get(Role, user.role_id)
-    
+
     return {
         "id": user.id,
         "email": user.email,
@@ -323,7 +310,7 @@ def delete_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux administrateurs"
         )
-    
+
     # Récupérer l'utilisateur
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -331,17 +318,17 @@ def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Utilisateur introuvable"
         )
-    
+
     # Empêcher la suppression de son propre compte
     if str(user.id) == str(principal.sub):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Vous ne pouvez pas supprimer votre propre compte"
         )
-    
+
     logger.info(f"Utilisateur supprimé: {user.email} par {principal.sub}")
-    
+
     db.delete(user)
     db.commit()
-    
+
     return None
