@@ -26,6 +26,7 @@ from ..models import (
     User,
     Role,
 )
+from .agents import sync_role_satellite
 from .auth import hash_password
 from .tenant_governance import ensure_default_tenant_settings
 
@@ -117,6 +118,9 @@ def create_tenant(
         )
         db.add(admin_user)
         db.flush()
+
+        # Synchroniser les tables satellites (agents/managers/viewers)
+        sync_role_satellite(db, admin_user)
 
         # 4. Create default tenant settings
         from .billing import get_plan, PLANS
