@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import User, Role, Permission, RolePermission
+from ..services.agents import sync_role_satellite
 from ..services.auth import hash_password
 from ..config import settings
 from ..security import require_dev_endpoint
@@ -185,6 +186,8 @@ def create_seed_users(db: Session = Depends(get_db)):
             )
 
             db.add(user)
+            db.flush()
+            sync_role_satellite(db, user)
             created_users.append({
                 "email": user_data["email"],
                 "role": user_data["role"]
@@ -251,6 +254,10 @@ def create_seed_user(payload: SeedUserRequest, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(user)
+
+    # Synchroniser les tables satellites (agents/managers/viewers)
+    sync_role_satellite(db, user)
+    db.commit()
 
     return {
         "success": True,
