@@ -1,13 +1,56 @@
 """Service CRUD pour la gestion des agents."""
 from __future__ import annotations
 
+import logging
 from typing import Optional, List
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from ..models import Agent, User, Role
+from ..models import Agent, Manager, Viewer, User, Role
 from ..services.auth import hash_password
+
+logger = logging.getLogger(__name__)
+
+# Mapping: role name → satellite model
+_ROLE_SATELLITE_MAP = {
+    "agent": Agent,
+    "manager": Manager,
+    "viewer": Viewer,
+}
+
+
+def sync_role_satellite(db: Session, user: User) -> None:
+    """Synchronise les tables satellites (agents/managers/viewers) avec le rôle du user.
+
+    - Si le user a un rôle qui correspond à une table satellite, crée l'entrée si elle n'existe pas.
+    - Supprime les entrées satellites obsolètes si le rôle a changé.
+    - Idempotent : peut être appelé plusieurs fois sans effet de bord.
+    """
+    if not user or not user.id:
+        return
+
+    role = db.get(Role, user.role_id) if user.role_id else None
+    role_name = (role.name if role else "").strip().lower()
+
+    for rname, model in _ROLE_SATELLITE_MAP.items():
+        existing = db.query(model).filter(model.user_id == user.id).first()
+        if rname == role_name:
+            # Le user a ce rôle → créer l'entrée si absente
+            if not existing:
+                kwargs = {"user_id": user.id, "tenant_id": user.tenant_id}
+                if model is Agent:
+                    kwargs["disponible"] = True
+                    kwargs["max_rdv_par_jour"] = 8
+                db.add(model(**kwargs))
+                logger.info(f"Auto-created {rname} satellite for user {user.id} ({user.email})")
+        else:
+            # Le user n'a plus ce rôle → supprimer l'entrée obsolète
+            if existing:
+                db.delete(existing)
+                logger.info(f"Removed obsolete {rname} satellite for user {user.id} ({user.email})")
+
+    db.flush()
 
 
 def create_agent(
